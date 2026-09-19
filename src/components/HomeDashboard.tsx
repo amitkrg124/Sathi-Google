@@ -3,20 +3,16 @@ import {
   Mic,
   FileSearch,
   CheckCircle2,
-  Calendar,
   Bell,
-  Users,
   Volume2,
   ArrowRight,
-  ShieldAlert,
+  ShieldCheck,
   Clock,
-  Sparkles,
-  ChevronRight,
   Check,
   AlertTriangle,
   Phone,
-  MapPin,
-  HeartPulse,
+  ChevronRight,
+  Lock,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { TRANSLATIONS } from '../data/translations';
@@ -30,10 +26,8 @@ export const HomeDashboard: React.FC = () => {
     reminders,
     toggleReminder,
     getActiveTask,
-    tasks,
     setActiveTaskId,
     contacts,
-    medicalProfile,
     speak,
   } = useApp();
 
@@ -53,194 +47,112 @@ export const HomeDashboard: React.FC = () => {
     if (lang === 'hi') {
       const speech = `नमस्ते ${preferences.userName} जी। आज आपके ${
         pendingReminders.length > 0 ? `${pendingReminders.length} जरूरी काम बाकी हैं` : 'कोई आवश्यक रिमाइंडर नहीं हैं'
-      }। ${
-        activeTask && activeTask.status === 'in_progress'
-          ? `आपका एक कार्य चल रहा है: ${activeTask.title}।`
-          : ''
-      } यदि कोई अनजान मैसेज आया हो, तो 'मैसेज समझें' पर टैप करके जांच लें।`;
+      }। यदि कोई अनजान मैसेज आया हो, तो 'मैसेज समझें' पर टैप करके जांच लें।`;
       speak(speech);
     } else {
       const speech = `Good day ${preferences.userName}. Today you have ${
         pendingReminders.length > 0 ? `${pendingReminders.length} pending reminders` : 'no urgent reminders'
-      }. ${
-        activeTask && activeTask.status === 'in_progress'
-          ? `You have an active task: ${activeTask.title}, currently at step ${activeTask.currentStepIndex + 1}.`
-          : ''
-      } If you received any unfamiliar message or SMS, tap Explain Anything to verify it safely.`;
+      }. If you received any unfamiliar message or SMS, tap Explain Anything to verify it safely.`;
       speak(speech);
     }
   };
 
   return (
-    <div id="home-dashboard" className="space-y-8 max-w-6xl mx-auto">
-      {/* Executive Hero Banner */}
-      <div className="bg-gradient-to-r from-[#0C1D2E] via-[#152E48] to-[#0C1D2E] text-white rounded-3xl p-6 sm:p-10 shadow-xl relative overflow-hidden border border-[#E7E2D8]">
-        <div className="max-w-2xl relative z-10 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs sm:text-sm font-semibold text-[#F3E5AB] backdrop-blur-xs border border-[#F3E5AB]/20">
-            <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>
-              {lang === 'hi'
-                ? 'वरिष्ठ नागरिकों का विश्वसनीय डिजिटल साथी'
-                : 'Senior-First Calm Digital Companion'}
-            </span>
+    <div id="home-dashboard" className="space-y-6 max-w-5xl mx-auto">
+      {/* Calm, Welcoming Hero Section */}
+      <div className="bg-[#0F172A] text-white rounded-3xl p-6 sm:p-8 shadow-md relative overflow-hidden">
+        <div className="max-w-2xl space-y-3 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-amber-300">
+            <span>✨ {lang === 'hi' ? 'आपका विश्वसनीय डिजिटल सहायक' : 'Your Digital Companion'}</span>
           </div>
 
-          <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug">
             {lang === 'hi'
               ? `नमस्ते ${preferences.userName} जी, आज मैं आपकी क्या मदद करूँ?`
-              : `Good day, ${preferences.userName}. How can I assist you?`}
+              : `Hello ${preferences.userName}, how can I help you today?`}
           </h2>
 
-          <p className="text-base sm:text-lg text-slate-200 leading-relaxed font-normal">
+          <p className="text-sm sm:text-base text-stone-300 leading-relaxed">
             {lang === 'hi'
               ? 'संदेश व बिल समझें, सुरक्षित रूप से ऑनलाइन काम पूरे करें, और धोखाधड़ी से बचें।'
               : 'Understand confusing messages, complete digital tasks safely at your own pace, and stay protected from scams.'}
           </p>
 
-          {/* Quick audio greeting trigger & SOS trigger */}
           <div className="pt-2 flex items-center gap-3 flex-wrap">
+            <button
+              id="home-open-voice-btn"
+              onClick={() => setVoiceModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm shadow-xs transition-transform active:scale-95 cursor-pointer"
+            >
+              <Mic className="w-4 h-4 text-teal-200" />
+              <span>{lang === 'hi' ? 'बोलकर पूछें' : 'Tap to Speak'}</span>
+            </button>
+
             <button
               id="home-listen-brief-btn"
               onClick={handleListenBrief}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-sm transition-all border border-white/20 shadow-xs active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-colors cursor-pointer border border-white/20"
             >
               <Volume2 className="w-4 h-4 text-amber-300" />
-              <span>{t.listenAudioBrief}</span>
-            </button>
-
-            <button
-              id="home-open-sos-btn"
-              onClick={() => setEmergencyModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600/90 hover:bg-red-600 text-white font-bold text-sm transition-all border border-red-400 shadow-xs active:scale-95"
-            >
-              <AlertTriangle className="w-4 h-4 text-amber-300 animate-bounce" />
-              <span>{t.emergencySosButton}</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentScreen('daily_brief')}
-              className="text-xs sm:text-sm text-slate-300 hover:text-white font-semibold underline underline-offset-4"
-            >
-              {lang === 'hi' ? 'दैनिक सारांश देखें' : 'View Daily Brief'}
+              <span>{lang === 'hi' ? 'सारांश सुनें' : 'Listen Brief'}</span>
             </button>
           </div>
-        </div>
-
-        {/* Elegant Devanagari Background Watermark */}
-        <div className="absolute right-4 -bottom-6 text-white/5 pointer-events-none hidden md:block">
-          <span className="text-[190px] font-black select-none font-serif">साथी</span>
         </div>
       </div>
 
-      {/* Emergency Quick Access Banner (Specially designed for Indian elders) */}
-      <div className="bg-gradient-to-r from-red-50 via-amber-50 to-red-50 rounded-3xl p-5 sm:p-6 border-2 border-red-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-red-600 text-white flex items-center justify-center shadow-md shrink-0">
-            <AlertTriangle className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="text-lg font-black text-slate-900">{t.emergencySosTitle}</h4>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-200 text-red-950 uppercase">
-                {lang === 'hi' ? '24/7 सक्रिय' : 'Instant 24x7'}
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-600">
-              {lang === 'hi'
-                ? 'तुरंत 112, 108 या परिवार को कॉल करें। लाउड सायरन और लाइव GPS शेयरिंग उपलब्ध।'
-                : 'One-tap dial for 112, 108 Ambulance, Elderline (14567), and family with live GPS.'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
-          <a
-            href="tel:112"
-            className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs"
-          >
-            <Phone className="w-4 h-4" />
-            <span>112</span>
-          </a>
-          <a
-            href="tel:108"
-            className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs"
-          >
-            <Phone className="w-4 h-4" />
-            <span>108</span>
-          </a>
-          <a
-            href={`tel:${primaryContact.phone.replace(/[^0-9+]/g, '')}`}
-            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs"
-          >
-            <Phone className="w-4 h-4" />
-            <span>{primaryContact.name}</span>
-          </a>
-          <button
-            onClick={() => setEmergencyModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-white border-2 border-red-400 text-red-700 hover:bg-red-50 font-bold text-xs sm:text-sm shadow-xs transition-colors"
-          >
-            {lang === 'hi' ? 'पूरा SOS पैनल खोलें' : 'Open Full SOS'}
-          </button>
-        </div>
-      </div>
-
-      {/* The 3 Signature Primary Action Cards */}
+      {/* 4 Big, Clear Main Action Cards */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl sm:text-2xl font-bold text-[#0C1D2E]">{t.whatToDo}</h3>
-          <span className="text-xs sm:text-sm text-slate-500 font-medium">
-            {t.tapCardToStart}
-          </span>
-        </div>
+        <h3 className="text-lg font-bold text-stone-900 mb-3.5">
+          {lang === 'hi' ? 'मुख्य सुविधाएं (Choose an Option)' : 'Main Features'}
+        </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-          {/* Card 1: Talk to Saathi */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Card 1: Ask Saathi */}
           <button
             id="card-talk-to-saathi"
-            onClick={() => setVoiceModalOpen(true)}
-            className="text-left bg-white rounded-3xl p-6 sm:p-7 border-2 border-[#E7E2D8] hover:border-[#0F766E] shadow-xs hover:shadow-lg transition-all group relative flex flex-col justify-between"
+            onClick={() => setCurrentScreen('ask')}
+            className="text-left bg-white rounded-2xl p-5 sm:p-6 border border-stone-200 hover:border-teal-600 hover:shadow-md transition-all group flex flex-col justify-between cursor-pointer"
           >
             <div>
-              <div className="w-16 h-16 rounded-2xl bg-[#0F766E]/10 text-[#0F766E] flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
-                <Mic className="w-8 h-8 animate-pulse text-[#0F766E]" />
+              <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <Mic className="w-6 h-6" />
               </div>
-              <h4 className="text-xl font-bold text-[#0C1D2E] group-hover:text-[#0F766E] transition-colors mb-2">
-                {t.cardTalkTitle}
+              <h4 className="text-lg font-bold text-stone-900 group-hover:text-teal-700 transition-colors mb-1.5">
+                {lang === 'hi' ? 'साथी से पूछें' : 'Ask Saathi'}
               </h4>
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-                {t.cardTalkDesc}
+              <p className="text-sm text-stone-600 leading-relaxed">
+                {lang === 'hi'
+                  ? 'आवाज या लिखकर कोई भी सवाल पूछें। सरल हिंदी में जवाब पाएं।'
+                  : 'Ask any question via voice or text. Get clear, patient answers.'}
               </p>
             </div>
-            <div className="mt-6 flex items-center gap-2 text-sm font-bold text-[#0F766E]">
-              <span>{t.cardTalkAction}</span>
+            <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-teal-700">
+              <span>{lang === 'hi' ? 'बातचीत शुरू करें' : 'Start Chat'}</span>
               <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
 
-          {/* Card 2: Explain Something & Scam Shield */}
+          {/* Card 2: Explain SMS & Bills */}
           <button
             id="card-explain-something"
             onClick={() => setCurrentScreen('explain')}
-            className="text-left bg-white rounded-3xl p-6 sm:p-7 border-2 border-[#E7E2D8] hover:border-[#1E3A5F] shadow-xs hover:shadow-lg transition-all group relative flex flex-col justify-between"
+            className="text-left bg-white rounded-2xl p-5 sm:p-6 border border-stone-200 hover:border-blue-600 hover:shadow-md transition-all group flex flex-col justify-between cursor-pointer"
           >
             <div>
-              <div className="w-16 h-16 rounded-2xl bg-[#1E3A5F]/10 text-[#1E3A5F] flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
-                <FileSearch className="w-8 h-8 text-[#1E3A5F]" />
+              <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <FileSearch className="w-6 h-6" />
               </div>
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-xl font-bold text-[#0C1D2E] group-hover:text-[#1E3A5F] transition-colors">
-                  {t.cardExplainTitle}
-                </h4>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold border border-amber-300">
-                  {lang === 'hi' ? 'धोखाधड़ी जांच' : 'Scam Shield'}
-                </span>
-              </div>
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-                {t.cardExplainDesc}
+              <h4 className="text-lg font-bold text-stone-900 group-hover:text-blue-700 transition-colors mb-1.5">
+                {lang === 'hi' ? 'मैसेज व बिल समझें (Scam Check)' : 'Explain SMS & Bills'}
+              </h4>
+              <p className="text-sm text-stone-600 leading-relaxed">
+                {lang === 'hi'
+                  ? 'संदिग्ध SMS, WhatsApp मैसेज या बिल की फोटो अपलोड करके जांचें।'
+                  : 'Check suspicious messages, verify bills, and detect scams.'}
               </p>
             </div>
-            <div className="mt-6 flex items-center gap-2 text-sm font-bold text-[#1E3A5F]">
-              <span>{t.cardExplainAction}</span>
+            <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-blue-700">
+              <span>{lang === 'hi' ? 'मैसेज जांचें' : 'Check Message'}</span>
               <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
@@ -249,149 +161,106 @@ export const HomeDashboard: React.FC = () => {
           <button
             id="card-help-me-do-it"
             onClick={() => {
-              if (activeTask) {
-                setActiveTaskId(activeTask.id);
-              }
+              if (activeTask) setActiveTaskId(activeTask.id);
               setCurrentScreen('tasks');
             }}
-            className="text-left bg-white rounded-3xl p-6 sm:p-7 border-2 border-[#E7E2D8] hover:border-[#0F766E] shadow-xs hover:shadow-lg transition-all group relative flex flex-col justify-between"
+            className="text-left bg-white rounded-2xl p-5 sm:p-6 border border-stone-200 hover:border-emerald-600 hover:shadow-md transition-all group flex flex-col justify-between cursor-pointer"
           >
             <div>
-              <div className="w-16 h-16 rounded-2xl bg-[#0F766E]/10 text-[#0F766E] flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
-                <CheckCircle2 className="w-8 h-8 text-[#0F766E]" />
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <CheckCircle2 className="w-6 h-6" />
               </div>
-              <h4 className="text-xl font-bold text-[#0C1D2E] group-hover:text-[#0F766E] transition-colors mb-2">
-                {t.cardTaskTitle}
+              <h4 className="text-lg font-bold text-stone-900 group-hover:text-emerald-700 transition-colors mb-1.5">
+                {lang === 'hi' ? 'कदम-दर-कदम काम पूरा करें' : 'Step-by-Step Task Guide'}
               </h4>
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-                {t.cardTaskDesc}
+              <p className="text-sm text-stone-600 leading-relaxed">
+                {lang === 'hi'
+                  ? 'बिजली बिल भुगतान, रेल टिकट व UPI गाइड बिना किसी गलती के पूरा करें।'
+                  : 'Pay electricity bills, book tickets, and learn digital tasks step by step.'}
               </p>
             </div>
-            <div className="mt-6 flex items-center gap-2 text-sm font-bold text-[#0F766E]">
-              <span>{t.cardTaskAction}</span>
+            <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-emerald-700">
+              <span>{lang === 'hi' ? 'गाइड शुरू करें' : 'Start Task'}</span>
+              <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+            </div>
+          </button>
+
+          {/* Card 4: Emergency SOS */}
+          <button
+            id="card-emergency-sos"
+            onClick={() => setEmergencyModalOpen(true)}
+            className="text-left bg-rose-50/70 rounded-2xl p-5 sm:p-6 border border-rose-200 hover:border-rose-600 hover:shadow-md transition-all group flex flex-col justify-between cursor-pointer"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h4 className="text-lg font-bold text-rose-950 group-hover:text-rose-700 transition-colors mb-1.5">
+                {lang === 'hi' ? 'आपातकालीन सहायता (Emergency SOS)' : 'Emergency Help & SOS'}
+              </h4>
+              <p className="text-sm text-rose-900/80 leading-relaxed">
+                {lang === 'hi'
+                  ? '112 पुलिस, 108 एम्बुलेंस या परिवार को तुरंत कॉल व GPS लोकेशन भेजें।'
+                  : 'Call 112, 108 Ambulance, or alert your family instantly with GPS.'}
+              </p>
+            </div>
+            <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-rose-700">
+              <span>{lang === 'hi' ? 'SOS सहायता खोलें' : 'Open SOS'}</span>
               <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
             </div>
           </button>
         </div>
       </div>
 
-      {/* Two Columns: Active Task & Today's Reminders */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Active Task Progress Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#E7E2D8] shadow-xs flex flex-col justify-between">
+      {/* Two Clean Overview Cards: Reminders & Active Task / Safety Tip */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Today's Reminders */}
+        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-stone-200 shadow-2xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5 bg-emerald-100/80 px-3 py-1 rounded-full">
-                <Clock className="w-3.5 h-3.5" />
-                {lang === 'hi' ? 'सक्रिय कार्य' : 'Active Guided Task'}
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5 bg-amber-100/80 px-2.5 py-1 rounded-full">
+                <Bell className="w-3.5 h-3.5" />
+                {lang === 'hi' ? 'आज के रिमाइंडर' : "Today's Reminders"}
               </span>
-              <span className="text-xs text-slate-500 font-semibold">
-                {lang === 'hi' ? 'चरण' : 'Step'} {activeTask ? activeTask.currentStepIndex + 1 : 1}{' '}
-                {lang === 'hi' ? 'कुल' : 'of'} {activeTask ? activeTask.steps.length : 4}
-              </span>
-            </div>
-
-            {activeTask ? (
-              <div className="space-y-3">
-                <h4 className="text-xl font-bold text-[#0C1D2E]">{activeTask.title}</h4>
-                <p className="text-sm text-slate-600">{activeTask.goal}</p>
-
-                {/* Progress bar */}
-                <div className="w-full bg-[#F4EFEA] h-3 rounded-full overflow-hidden border border-[#E7E2D8] my-3">
-                  <div
-                    className="bg-emerald-600 h-full transition-all duration-300 rounded-full"
-                    style={{
-                      width: `${((activeTask.currentStepIndex + 1) / activeTask.steps.length) * 100}%`,
-                    }}
-                  />
-                </div>
-
-                <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#E7E2D8]">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    {lang === 'hi' ? 'वर्तमान चरण:' : 'Current Step:'}
-                  </p>
-                  <p className="text-base font-semibold text-[#0C1D2E] mt-1">
-                    {activeTask.steps[activeTask.currentStepIndex]?.title}
-                  </p>
-                  <p className="text-sm text-slate-600 mt-0.5 line-clamp-2">
-                    {activeTask.steps[activeTask.currentStepIndex]?.instruction}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-slate-500">
-                {lang === 'hi' ? 'कोई सक्रिय कार्य नहीं है।' : 'No active task. Start a new task anytime!'}
-              </p>
-            )}
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-[#E7E2D8] flex items-center justify-between">
-            <button
-              onClick={() => {
-                if (activeTask) setActiveTaskId(activeTask.id);
-                setCurrentScreen('tasks');
-              }}
-              className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold transition-colors flex items-center gap-2 shadow-xs"
-            >
-              <span>{lang === 'hi' ? 'कार्य जारी रखें' : 'Continue Task'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setCurrentScreen('tasks')}
-              className="text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900"
-            >
-              {lang === 'hi' ? 'सभी कार्य गाइड' : 'All Task Workflows'}
-            </button>
-          </div>
-        </div>
-
-        {/* Today's Reminders Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#E7E2D8] shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#0C1D2E] flex items-center gap-1.5 bg-amber-100 px-3 py-1 rounded-full">
-                <Bell className="w-3.5 h-3.5 text-amber-800" />
-                {t.todayReminders}
-              </span>
-              <span className="text-xs text-slate-500 font-semibold">
+              <span className="text-xs text-stone-500 font-semibold">
                 {todayReminders.filter((r) => r.completed).length}/{todayReminders.length}{' '}
                 {lang === 'hi' ? 'पूर्ण' : 'Done'}
               </span>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {todayReminders.slice(0, 3).map((reminder) => (
                 <div
                   key={reminder.id}
                   onClick={() => toggleReminder(reminder.id)}
-                  className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
+                  className={`p-3 rounded-xl border transition-all flex items-center justify-between cursor-pointer ${
                     reminder.completed
-                      ? 'bg-[#FAF8F5] border-[#E7E2D8] opacity-60'
-                      : 'bg-white border-[#E7E2D8] hover:border-amber-500 shadow-2xs'
+                      ? 'bg-stone-50 border-stone-200 opacity-60'
+                      : 'bg-white border-stone-200 hover:border-amber-400'
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <div
-                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors shrink-0 ${
+                      className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors shrink-0 ${
                         reminder.completed
                           ? 'bg-emerald-600 border-emerald-600 text-white'
-                          : 'border-slate-400 bg-white'
+                          : 'border-stone-400 bg-white'
                       }`}
                     >
-                      {reminder.completed && <Check className="w-4 h-4 stroke-[3]" />}
+                      {reminder.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                     </div>
                     <div className="truncate">
                       <p
-                        className={`text-base font-semibold leading-snug truncate ${
-                          reminder.completed ? 'line-through text-slate-400' : 'text-[#0C1D2E]'
+                        className={`text-sm font-semibold truncate ${
+                          reminder.completed ? 'line-through text-stone-400' : 'text-stone-900'
                         }`}
                       >
                         {reminder.title}
                       </p>
-                      <p className="text-xs text-slate-500">{reminder.time}</p>
+                      <p className="text-xs text-stone-500">{reminder.time}</p>
                     </div>
                   </div>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-[#FAF8F5] text-slate-600 border border-[#E7E2D8] shrink-0 ml-2">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 shrink-0 ml-2">
                     {reminder.category}
                   </span>
                 </div>
@@ -399,49 +268,95 @@ export const HomeDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-[#E7E2D8] flex items-center justify-between">
+          <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
             <button
               onClick={() => setCurrentScreen('reminders')}
-              className="text-sm font-bold text-amber-900 hover:underline flex items-center gap-1"
+              className="text-xs font-bold text-amber-900 hover:underline flex items-center gap-1 cursor-pointer"
             >
-              <span>{lang === 'hi' ? 'सभी रिमाइंडर देखें' : 'Open All Reminders'}</span>
-              <ChevronRight className="w-4 h-4" />
+              <span>{lang === 'hi' ? 'सभी रिमाइंडर देखें' : 'View All Reminders'}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setCurrentScreen('reminders')}
-              className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#FAF8F5] border border-[#E7E2D8] text-slate-800 hover:bg-white"
+              className="text-xs font-bold px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 cursor-pointer"
             >
-              + {lang === 'hi' ? 'नया जोड़ें' : 'Add Reminder'}
+              + {lang === 'hi' ? 'नया जोड़ें' : 'Add'}
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Trusted Circle Quick Reassurance Strip */}
-      <div className="bg-[#FAF8F5] rounded-3xl p-5 border border-[#E7E2D8] flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-white border border-[#E7E2D8] flex items-center justify-center text-[#0C1D2E] shadow-xs">
-            <Users className="w-5 h-5 text-[#0C1D2E]" />
-          </div>
-          <div>
-            <p className="text-sm sm:text-base font-bold text-[#0C1D2E]">
-              {lang === 'hi' ? 'परिवार व विश्वसनीय लोग' : 'Need someone you trust involved?'}
-            </p>
-            <p className="text-xs sm:text-sm text-slate-600">
-              {primaryContact.name} ({primaryContact.relationship}){' '}
-              {lang === 'hi'
-                ? 'आपात स्थिति या सुरक्षा सलाह के लिए पंजीकृत हैं।'
-                : 'is registered to receive safety alerts if you need a second opinion.'}
-            </p>
-          </div>
+        {/* Right Card: Active Task or Senior Safety Tip */}
+        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-stone-200 shadow-2xs flex flex-col justify-between">
+          {activeTask ? (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5 bg-emerald-100 px-2.5 py-1 rounded-full">
+                  <Clock className="w-3.5 h-3.5" />
+                  {lang === 'hi' ? 'सक्रिय कार्य' : 'Active Task'}
+                </span>
+                <span className="text-xs text-stone-500 font-semibold">
+                  {lang === 'hi' ? 'चरण' : 'Step'} {activeTask.currentStepIndex + 1}/{activeTask.steps.length}
+                </span>
+              </div>
+
+              <h4 className="text-base font-bold text-stone-900">{activeTask.title}</h4>
+              <p className="text-xs text-stone-600 mt-1 line-clamp-2">
+                {activeTask.steps[activeTask.currentStepIndex]?.instruction}
+              </p>
+
+              {/* Simple progress */}
+              <div className="w-full bg-stone-100 h-2 rounded-full overflow-hidden my-3 border border-stone-200">
+                <div
+                  className="bg-emerald-600 h-full rounded-full transition-all"
+                  style={{
+                    width: `${((activeTask.currentStepIndex + 1) / activeTask.steps.length) * 100}%`,
+                  }}
+                />
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    setActiveTaskId(activeTask.id);
+                    setCurrentScreen('tasks');
+                  }}
+                  className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                >
+                  <span>{lang === 'hi' ? 'कार्य जारी रखें' : 'Continue'}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-teal-900 flex items-center gap-1.5 bg-teal-100 px-2.5 py-1 rounded-full">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  {lang === 'hi' ? 'सुरक्षा नियम' : 'Safety Tip'}
+                </span>
+              </div>
+
+              <h4 className="text-base font-bold text-stone-900">
+                {lang === 'hi' ? 'कभी भी किसी को अपना OTP न बताएं' : 'Never share your OTP or UPI PIN'}
+              </h4>
+              <p className="text-xs text-stone-600 mt-1.5 leading-relaxed">
+                {lang === 'hi'
+                  ? 'बैंक या बिजली विभाग कभी भी फोन पर OTP, पासवर्ड या स्क्रीन शेयरिंग ऐप डाउनलोड करने को नहीं कहते।'
+                  : 'Official banks and electricity boards never ask for your OTP, PIN, or remote screen apps over phone calls.'}
+              </p>
+
+              <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between">
+                <button
+                  onClick={() => setCurrentScreen('explain')}
+                  className="text-xs font-bold text-teal-800 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>{lang === 'hi' ? 'संदेह होने पर तुरंत जांचें' : 'Check a suspicious message'}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-        <button
-          id="btn-open-trusted-circle-home"
-          onClick={() => setCurrentScreen('trusted_circle')}
-          className="px-4 py-2 rounded-xl bg-white border border-[#E7E2D8] text-xs sm:text-sm font-bold text-slate-800 hover:bg-slate-100 transition-colors shadow-2xs"
-        >
-          {lang === 'hi' ? 'संपर्क सूची देखें' : 'Manage Trusted Circle'}
-        </button>
       </div>
     </div>
   );

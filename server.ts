@@ -1,14 +1,34 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import path from "path";
 import dotenv from "dotenv";
+import helmet from "helmet";
+import cors from "cors";
+import compression from "compression";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
+import { apiCache } from "./src/server/cache";
+import {
+  apiRateLimiter,
+  chatRateLimiter,
+  sanitizeString,
+  isValidBase64Image,
+  safeErrorHandler,
+} from "./src/server/security";
 
 dotenv.config();
 
-const app = express();
-const PORT = 3000;
+export const app = express();
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
+// Security & Optimization Middlewares
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Allows Vite and inline scripts in local & production
+    crossOriginEmbedderPolicy: false,
+  })
+);
+app.use(cors());
+app.use(compression()); // Gzip/Brotli response compression for maximum Efficiency
 app.use(express.json({ limit: "15mb" }));
 
 // Lazy initialize Gemini client
@@ -27,23 +47,41 @@ function getGeminiClient(): GoogleGenAI | null {
   });
 }
 
-// Health check
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", service: "Saathi AI Companion", features: ["Voice", "ScamShield", "Hindi_En", "SOS"] });
+// Health check with stats
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({
+    status: "ok",
+    service: "Saathi AI Companion",
+    uptimeSeconds: Math.floor(process.uptime()),
+    features: ["Voice", "ScamShield", "Hindi_En", "SOS", "Cache", "SecurityHeaders"],
+    cacheStats: apiCache.getStats(),
+  });
 });
 
 // 1. Ask Saathi: Conversational digital assistant for seniors
-app.post("/api/chat", async (req, res) => {
-  const { message, conversationHistory = [], language = "hi", simplificationLevel = "simple" } = req.body;
+app.post("/api/chat", chatRateLimiter, async (req: Request, res: Response, next) => {
+  try {
+    const rawMessage = req.body.message;
+    const language = req.body.language === "en" ? "en" : "hi";
+    const conversationHistory = Array.isArray(req.body.conversationHistory)
+      ? req.body.conversationHistory
+      : [];
 
-  if (!message || typeof message !== "string") {
-    return res.status(400).json({ error: "A message is required." });
-  }
+    const message = sanitizeString(rawMessage, 1000);
+    if (!message) {
+      return res.status(400).json({ error: "A valid message is required.", code: "INVALID_INPUT" });
+    }
 
-  const ai = getGeminiClient();
+    // Check high-speed in-memory cache
+    const cacheKey = `chat:${language}:${message.toLowerCase()}`;
+    const cachedResponse = apiCache.get(cacheKey);
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
-  const isHindi = language === "hi";
-  const systemInstruction = `
+    const ai = getGeminiClient();
+    const isHindi = language === "hi";
+    const systemInstruction = `
 You are Saathi AI (साथी), a warm, patient, kind, and deeply respectful digital companion designed especially for Indian senior citizens.
 Your mission is to help older adults navigate the digital world with confidence, ease, and complete safety.
 
@@ -57,20 +95,20 @@ CORE RULES:
 ${isHindi ? "You MUST output all replyText, simplifiedKeyTakeaway, and followUpSuggestions in pure, respectful, and natural Hindi (देवनागरी)." : "Provide response in clear, accessible English with gentle tone."}
 `;
 
-  if (!ai) {
-    const fallbackAnswer = generateFallbackChat(message, language);
-    return res.json(fallbackAnswer);
-  }
+    if (!ai) {
+      const fallbackAnswer = generateFallbackChat(message, language);
+      apiCache.set(cacheKey, fallbackAnswer);
+      return res.json(fallbackAnswer);
+    }
 
-  try {
     const contents: any[] = [];
-    
-    // Add past history if any
     for (const item of conversationHistory.slice(-6)) {
-      contents.push({
-        role: item.role === "user" ? "user" : "model",
-        parts: [{ text: item.text }],
-      });
+      if (item && item.text) {
+        contents.push({
+          role: item.role === "user" ? "user" : "model",
+          parts: [{ text: sanitizeString(item.text, 500) }],
+        });
+      }
     }
 
     contents.push({
@@ -103,7 +141,7 @@ ${isHindi ? "You MUST output all replyText, simplifiedKeyTakeaway, and followUpS
             },
             suggestedWorkflow: {
               type: Type.STRING,
-              description: "Optional workflow title if this question can become a step-by-step task, e.g. 'Pay electricity bill' or 'Check phone storage'.",
+              description: "Optional workflow title if this question can become a step-by-step task.",
             },
           },
           required: ["replyText", "simplifiedKeyTakeaway", "followUpSuggestions"],
@@ -113,25 +151,40 @@ ${isHindi ? "You MUST output all replyText, simplifiedKeyTakeaway, and followUpS
 
     const rawJson = response.text?.trim() || "{}";
     const parsed = JSON.parse(rawJson);
+    apiCache.set(cacheKey, parsed);
     return res.json(parsed);
   } catch (error: any) {
     console.error("Gemini chat error:", error);
-    return res.json(generateFallbackChat(message, language));
+    const fallback = generateFallbackChat(req.body.message || "", req.body.language || "hi");
+    return res.json(fallback);
   }
 });
 
 // 2. Explain Anything & Scam Shield (Multimodal or Text)
-app.post("/api/explain", async (req, res) => {
-  const { text, imageBase64, mimeType = "image/jpeg", language = "hi" } = req.body;
+app.post("/api/explain", apiRateLimiter, async (req: Request, res: Response, next) => {
+  try {
+    const rawText = req.body.text;
+    const imageBase64 = req.body.imageBase64;
+    const mimeType = req.body.mimeType || "image/jpeg";
+    const language = req.body.language === "en" ? "en" : "hi";
 
-  if (!text && !imageBase64) {
-    return res.status(400).json({ error: "Text or image is required." });
-  }
+    const text = sanitizeString(rawText, 3000);
+    const hasValidImage = imageBase64 && isValidBase64Image(imageBase64, mimeType);
 
-  const ai = getGeminiClient();
-  const isHindi = language === "hi";
+    if (!text && !hasValidImage) {
+      return res.status(400).json({ error: "Valid text or image is required.", code: "INVALID_INPUT" });
+    }
 
-  const systemInstruction = `
+    const cacheKey = `explain:${language}:${text.toLowerCase().slice(0, 100)}`;
+    if (text && !hasValidImage) {
+      const cached = apiCache.get(cacheKey);
+      if (cached) return res.json(cached);
+    }
+
+    const ai = getGeminiClient();
+    const isHindi = language === "hi";
+
+    const systemInstruction = `
 You are Saathi AI's 'Explain Anything & Scam Shield' engine for Indian senior citizens.
 You analyze screenshots, text messages, bills, emails, or notifications.
 
@@ -146,16 +199,17 @@ Your job is to:
    - Be calm and measured. Distinguish between 'possible warning signs' vs 'safe message'. Never state it is 100% verified unless official, and never panic the user.
    - Provide a safe recommended action (e.g. "Do not click links. Contact your branch directly.").
 4. Language Requirement: User preference is ${isHindi ? "HINDI (Devanagari)" : "ENGLISH"}.
-${isHindi ? "You MUST translate all output fields (documentType, summary, whatItSays, whatItMeans, whatYouCanDo, scamAnalysis.headline, warningSigns, recommendedAction, reasoning) into natural, polite Hindi." : ""}
+${isHindi ? "You MUST translate all output fields into natural, polite Hindi." : ""}
 `;
 
-  if (!ai) {
-    return res.json(generateFallbackExplanation(text, language));
-  }
+    if (!ai) {
+      const fallback = generateFallbackExplanation(text, language);
+      if (text) apiCache.set(cacheKey, fallback);
+      return res.json(fallback);
+    }
 
-  try {
     const parts: any[] = [];
-    if (imageBase64) {
+    if (hasValidImage) {
       parts.push({
         inlineData: {
           mimeType,
@@ -178,50 +232,30 @@ ${isHindi ? "You MUST translate all output fields (documentType, summary, whatIt
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            documentType: {
-              type: Type.STRING,
-              description: "Type of document, e.g. 'Bank SMS Alert', 'Electricity Bill', 'Courier Notification'.",
-            },
-            summary: {
-              type: Type.STRING,
-              description: "One-sentence gentle overview.",
-            },
-            whatItSays: {
-              type: Type.STRING,
-              description: "Clear, simplified description of what the text or image says.",
-            },
-            whatItMeans: {
-              type: Type.STRING,
-              description: "What this really means in practical terms for the user.",
-            },
+            documentType: { type: Type.STRING },
+            summary: { type: Type.STRING },
+            whatItSays: { type: Type.STRING },
+            whatItMeans: { type: Type.STRING },
             whatYouCanDo: {
               type: Type.ARRAY,
               items: { type: Type.STRING },
-              description: "List of 2 to 4 safe next steps.",
             },
             scamAnalysis: {
               type: Type.OBJECT,
               properties: {
                 isSuspicious: { type: Type.BOOLEAN },
-                severity: {
-                  type: Type.STRING,
-                  description: "One of 'safe', 'caution', or 'danger'.",
-                },
+                severity: { type: Type.STRING },
                 headline: { type: Type.STRING },
                 warningSigns: {
                   type: Type.ARRAY,
                   items: { type: Type.STRING },
-                  description: "Specific red flags found or empty if clean.",
                 },
                 recommendedAction: { type: Type.STRING },
                 reasoning: { type: Type.STRING },
               },
               required: ["isSuspicious", "severity", "headline", "warningSigns", "recommendedAction"],
             },
-            suggestedTaskTitle: {
-              type: Type.STRING,
-              description: "Optional task goal that can link directly to 'Help Me Do It'.",
-            },
+            suggestedTaskTitle: { type: Type.STRING },
           },
           required: ["documentType", "summary", "whatItSays", "whatItMeans", "whatYouCanDo", "scamAnalysis"],
         },
@@ -229,27 +263,37 @@ ${isHindi ? "You MUST translate all output fields (documentType, summary, whatIt
     });
 
     const parsed = JSON.parse(response.text?.trim() || "{}");
+    if (text && !hasValidImage) {
+      apiCache.set(cacheKey, parsed);
+    }
     return res.json(parsed);
   } catch (error: any) {
     console.error("Gemini explain error:", error);
-    return res.json(generateFallbackExplanation(text, language));
+    return res.json(generateFallbackExplanation(req.body.text, req.body.language || "hi"));
   }
 });
 
 // 3. Help Me Do It — Task Planner & Step-by-Step Guidance
-app.post("/api/plan-task", async (req, res) => {
-  const { goal, language = "hi" } = req.body;
+app.post("/api/plan-task", apiRateLimiter, async (req: Request, res: Response, next) => {
+  try {
+    const rawGoal = req.body.goal;
+    const language = req.body.language === "en" ? "en" : "hi";
+    const goal = sanitizeString(rawGoal, 500);
 
-  if (!goal || typeof goal !== "string") {
-    return res.status(400).json({ error: "A goal is required." });
-  }
+    if (!goal) {
+      return res.status(400).json({ error: "A valid goal is required.", code: "INVALID_INPUT" });
+    }
 
-  const ai = getGeminiClient();
-  const isHindi = language === "hi";
+    const cacheKey = `task:${language}:${goal.toLowerCase()}`;
+    const cached = apiCache.get(cacheKey);
+    if (cached) return res.json(cached);
 
-  const systemInstruction = `
+    const ai = getGeminiClient();
+    const isHindi = language === "hi";
+
+    const systemInstruction = `
 You are Saathi AI's 'Help Me Do It' Task Coach for older adults in India.
-The user wants to complete an everyday digital task (e.g. paying electricity bill, ordering groceries, booking a cab, checking railway PNR, changing WhatsApp photo).
+The user wants to complete an everyday digital task.
 
 Rules:
 1. Break the task down into 3 to 6 very clear, simple, sequential steps.
@@ -262,11 +306,12 @@ Rules:
 ${isHindi ? "All step titles, instructions, detailed explanations, prerequisites, and tips must be in clear Hindi." : ""}
 `;
 
-  if (!ai) {
-    return res.json(generateFallbackTaskPlan(goal, language));
-  }
+    if (!ai) {
+      const fallback = generateFallbackTaskPlan(goal, language);
+      apiCache.set(cacheKey, fallback);
+      return res.json(fallback);
+    }
 
-  try {
     const response = await ai.models.generateContent({
       model: "gemini-3.8-flash",
       contents: [{ role: "user", parts: [{ text: `Create a step-by-step guided task plan for: ${goal}` }] }],
@@ -303,10 +348,7 @@ ${isHindi ? "All step titles, instructions, detailed explanations, prerequisites
                 required: ["stepNumber", "title", "instruction", "detailedExplanation", "isSensitive", "actionLabel"],
               },
             },
-            followUpReminderSuggestion: {
-              type: Type.STRING,
-              description: "Suggested reminder after completion.",
-            },
+            followUpReminderSuggestion: { type: Type.STRING },
           },
           required: ["title", "goal", "estimatedTime", "prerequisites", "steps"],
         },
@@ -314,15 +356,19 @@ ${isHindi ? "All step titles, instructions, detailed explanations, prerequisites
     });
 
     const parsed = JSON.parse(response.text?.trim() || "{}");
+    apiCache.set(cacheKey, parsed);
     return res.json(parsed);
   } catch (error: any) {
     console.error("Gemini task plan error:", error);
-    return res.json(generateFallbackTaskPlan(goal, language));
+    return res.json(generateFallbackTaskPlan(req.body.goal || "", req.body.language || "hi"));
   }
 });
 
-// Fallback generators for deterministic testing & offline resilience
-function generateFallbackChat(userMessage: string, language: string = "hi") {
+// Attach global error handler
+app.use(safeErrorHandler);
+
+// Deterministic fallback generators
+export function generateFallbackChat(userMessage: string, language: string = "hi") {
   const lower = userMessage.toLowerCase();
   const isHindi = language === "hi";
 
@@ -395,9 +441,22 @@ function generateFallbackChat(userMessage: string, language: string = "hi") {
       };
 }
 
-function generateFallbackExplanation(text?: string, language: string = "hi") {
+export function generateFallbackExplanation(text?: string, language: string = "hi") {
   const lower = (text || "").toLowerCase();
-  const isSuspicious = lower.includes("blocked") || lower.includes("urgent") || lower.includes("link") || lower.includes("kyc") || lower.includes("lottery") || lower.includes("winner") || lower.includes("बंद") || lower.includes("ब्लॉक");
+  const isSuspicious =
+    lower.includes("blocked") ||
+    lower.includes("urgent") ||
+    lower.includes("link") ||
+    lower.includes("kyc") ||
+    lower.includes("lottery") ||
+    lower.includes("winner") ||
+    lower.includes("disconnect") ||
+    lower.includes("overdue") ||
+    lower.includes("काट") ||
+    lower.includes("बंद") ||
+    lower.includes("ब्लॉक") ||
+    lower.includes("धमकी") ||
+    lower.includes("तुरंत");
   const isHindi = language === "hi";
 
   if (isSuspicious) {
@@ -499,7 +558,7 @@ function generateFallbackExplanation(text?: string, language: string = "hi") {
       };
 }
 
-function generateFallbackTaskPlan(goal: string, language: string = "hi") {
+export function generateFallbackTaskPlan(goal: string, language: string = "hi") {
   const isHindi = language === "hi";
 
   if (isHindi) {
@@ -637,15 +696,20 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (_req, res) => {
+    app.use(express.static(distPath, { maxAge: "1d", etag: true }));
+    app.get("*", (_req: Request, res: Response) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Saathi AI server running on port ${PORT}`);
-  });
+  // Only listen when running as main entry
+  if (process.env.NODE_ENV !== "test") {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Saathi AI server running on port ${PORT}`);
+    });
+  }
 }
 
-startServer();
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+}

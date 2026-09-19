@@ -1,25 +1,19 @@
 import React, { useState } from 'react';
 import {
   Upload,
-  FileText,
   ShieldAlert,
   ShieldCheck,
   AlertTriangle,
   Volume2,
   Share2,
-  ArrowRight,
   CheckCircle2,
   RefreshCw,
   Image as ImageIcon,
-  HelpCircle,
-  PhoneCall,
-  Check,
   X,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { SAMPLE_SCENARIOS, SampleScenario } from '../data/seedData';
 import { explainContentApi, planTaskApi } from '../services/api';
-import { ExplanationResult } from '../types';
 
 export const ExplainView: React.FC = () => {
   const {
@@ -68,7 +62,7 @@ export const ExplainView: React.FC = () => {
       const res = await explainContentApi(rawText, selectedImage || undefined, mimeType, lang);
       setIsLoading(false);
       setExplanationResult(res);
-    } catch (err) {
+    } catch {
       setIsLoading(false);
     }
   };
@@ -98,91 +92,85 @@ export const ExplainView: React.FC = () => {
   };
 
   return (
-    <div id="explain-screen" className="max-w-6xl mx-auto space-y-6">
+    <div id="explain-screen" className="max-w-5xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-[#DDE4EA]">
+      <div className="pb-3 border-b border-stone-200 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#12304A]">
-              Explain Anything & Scam Shield
-            </h2>
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold">
-              Safety First
-            </span>
-          </div>
-          <p className="text-sm sm:text-base text-[#5D6B78] mt-0.5">
-            Received an unfamiliar SMS, bank alert, bill, or WhatsApp link? Let Saathi inspect it safely.
+          <h2 className="text-xl sm:text-2xl font-bold text-stone-900">
+            {lang === 'hi' ? 'मैसेज व बिल समझें (Scam Check)' : 'Explain Anything & Scam Shield'}
+          </h2>
+          <p className="text-xs sm:text-sm text-stone-500">
+            {lang === 'hi'
+              ? 'कोई भी अनजान SMS, WhatsApp संदेश या बिल की फोटो डालें — साथी तुरंत बताएगा कि यह असली है या फ्रॉड।'
+              : 'Paste any confusing SMS, bill, or WhatsApp message to verify if it is safe or a scam.'}
           </p>
         </div>
       </div>
 
-      {/* Upload Zone & Scenario Selector */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Input / Upload / Presets */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left Column: Input */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white rounded-3xl p-6 border border-[#DDE4EA] shadow-xs space-y-4">
-            <h3 className="text-lg font-bold text-[#12304A] flex items-center gap-2">
-              <Upload className="w-5 h-5 text-[#2F6FED]" />
-              <span>1. Choose or Paste Content</span>
+          <div className="bg-white rounded-2xl p-5 border border-stone-200 shadow-2xs space-y-3.5">
+            <h3 className="text-sm font-bold text-stone-900 flex items-center gap-1.5">
+              <Upload className="w-4 h-4 text-teal-700" />
+              <span>{lang === 'hi' ? '1. संदेश या फोटो चुनें' : '1. Enter or Upload Message'}</span>
             </h3>
 
-            {/* Presets for Judges & Instant Evaluation */}
+            {/* Quick Sample Presets */}
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-[#5D6B78] mb-2">
-                Quick Real-World Test Scenarios:
+              <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
+                {lang === 'hi' ? 'परीक्षण के लिए उदाहरण चुनें:' : 'Quick Examples to Test:'}
               </p>
-              <div className="space-y-2">
-                {SAMPLE_SCENARIOS.map((sc) => (
+              <div className="space-y-1.5">
+                {SAMPLE_SCENARIOS.slice(0, 3).map((sc) => (
                   <button
                     key={sc.id}
                     onClick={() => handleSelectScenario(sc)}
-                    className={`w-full text-left p-3 rounded-2xl border transition-all ${
+                    className={`w-full text-left p-2.5 rounded-xl border text-xs transition-colors cursor-pointer ${
                       activeScenarioId === sc.id
-                        ? 'border-[#2F6FED] bg-[#2F6FED]/5 shadow-xs'
-                        : 'border-[#DDE4EA] bg-[#F7F9FC] hover:bg-white'
+                        ? 'border-teal-600 bg-teal-50 text-teal-900 font-semibold'
+                        : 'border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-bold text-[#12304A]">{sc.title}</span>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${sc.badgeColor}`}>
-                        {sc.tag}
-                      </span>
-                    </div>
-                    <p className="text-xs text-[#5D6B78] line-clamp-2">{sc.previewText}</p>
+                    <span className="font-bold block truncate">{sc.title}</span>
+                    <span className="text-[11px] text-stone-500 line-clamp-1 mt-0.5">{sc.previewText}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Custom Input Textarea */}
+            {/* Textarea */}
             <div>
-              <label htmlFor="explain-raw-text" className="block text-xs font-bold uppercase tracking-wider text-[#5D6B78] mb-1">
-                Or paste text / SMS here:
+              <label htmlFor="explain-raw-text" className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
+                {lang === 'hi' ? 'संदेश का टेक्स्ट यहाँ लिखें / पेस्ट करें:' : 'Or paste text here:'}
               </label>
               <textarea
                 id="explain-raw-text"
-                rows={4}
+                rows={3}
                 value={rawText}
                 onChange={(e) => {
                   setRawText(e.target.value);
                   setActiveScenarioId(null);
                 }}
-                placeholder="Paste the SMS, message, email, or bill contents here..."
-                className="w-full p-3 rounded-2xl border-2 border-[#DDE4EA] focus:border-[#2F6FED] text-sm text-[#12304A] focus:outline-hidden"
+                placeholder={
+                  lang === 'hi'
+                    ? 'यहाँ SMS या संदेश पेस्ट करें...'
+                    : 'Paste the SMS or message contents here...'
+                }
+                className="w-full p-3 rounded-xl border border-stone-300 focus:border-teal-600 text-xs sm:text-sm text-stone-900 focus:outline-hidden"
               />
             </div>
 
-            {/* Image / Screenshot Upload */}
+            {/* Photo / Screenshot Upload */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#5D6B78] mb-1">
-                Or upload a photo / screenshot:
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
+                {lang === 'hi' ? 'या फोटो / स्क्रीनशॉट जोड़ें:' : 'Or upload photo / screenshot:'}
               </label>
-              <label className="border-2 border-dashed border-[#DDE4EA] hover:border-[#2F6FED] rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer bg-[#F7F9FC] hover:bg-white transition-all text-center">
-                <ImageIcon className="w-8 h-8 text-[#5D6B78] mb-1" />
-                <span className="text-xs font-bold text-[#2F6FED]">
-                  {selectedImage ? 'Change Selected Image' : 'Browse Photo or Screenshot'}
+              <label className="border-2 border-dashed border-stone-200 hover:border-teal-600 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer bg-stone-50 hover:bg-stone-100 transition-colors text-center">
+                <ImageIcon className="w-5 h-5 text-stone-500 mb-1" />
+                <span className="text-xs font-semibold text-teal-800">
+                  {selectedImage ? (lang === 'hi' ? 'फोटो बदलें' : 'Change Image') : (lang === 'hi' ? 'फोटो चुनें' : 'Browse Photo')}
                 </span>
-                <span className="text-[11px] text-[#5D6B78] mt-0.5">PNG, JPG, or screenshot</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -191,51 +179,51 @@ export const ExplainView: React.FC = () => {
                 />
               </label>
               {selectedImage && (
-                <div className="mt-2 relative rounded-xl overflow-hidden border border-[#DDE4EA] max-h-36">
-                  <img src={selectedImage} alt="Selected screenshot" className="w-full object-cover" />
+                <div className="mt-2 relative rounded-lg overflow-hidden border border-stone-200 max-h-28">
+                  <img src={selectedImage} alt="Selected" className="w-full object-cover" />
                   <button
                     onClick={() => setSelectedImage(null)}
-                    className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-full hover:bg-black"
+                    className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-full hover:bg-black cursor-pointer"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Primary Action */}
+            {/* Submit button */}
             <button
               id="btn-inspect-content"
               onClick={handleAnalyze}
               disabled={isLoading || (!rawText.trim() && !selectedImage)}
-              className="w-full py-3.5 rounded-2xl bg-[#2F6FED] hover:bg-[#2358bf] disabled:opacity-50 text-white font-bold text-base shadow-md flex items-center justify-center gap-2 transition-all"
+              className="w-full py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-bold text-sm shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               {isLoading ? (
                 <>
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                  <span>Reading & Analyzing for Safety...</span>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>{lang === 'hi' ? 'जांच हो रही है...' : 'Analyzing safely...'}</span>
                 </>
               ) : (
                 <>
-                  <ShieldAlert className="w-5 h-5" />
-                  <span>Explain & Check for Scams</span>
+                  <ShieldAlert className="w-4 h-4" />
+                  <span>{lang === 'hi' ? 'जांचें व समझें' : 'Explain & Check Scams'}</span>
                 </>
               )}
             </button>
           </div>
         </div>
 
-        {/* Right Column: Analysis Result & Scam Shield */}
+        {/* Right Column: Results */}
         <div className="lg:col-span-7">
           {explanationResult ? (
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#DDE4EA] shadow-xs space-y-6">
-              {/* Document Type Badge & Listen Aloud Action */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-[#DDE4EA]">
+            <div className="bg-white rounded-2xl p-5 sm:p-6 border border-stone-200 shadow-2xs space-y-4">
+              {/* Document Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-stone-200">
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#5D6B78]">
-                    Identified Content
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                    {lang === 'hi' ? 'पहचाना गया संदेश' : 'Identified Content'}
                   </span>
-                  <h3 className="text-xl font-bold text-[#12304A]">
+                  <h3 className="text-base sm:text-lg font-bold text-stone-900">
                     {explanationResult.documentType}
                   </h3>
                 </div>
@@ -243,190 +231,103 @@ export const ExplainView: React.FC = () => {
                   id="btn-listen-explain-summary"
                   onClick={() =>
                     speak(
-                      `${explanationResult.summary}. ${explanationResult.whatItSays}. What it means: ${explanationResult.whatItMeans}`
+                      `${explanationResult.summary}. ${explanationResult.whatItSays}. ${explanationResult.whatItMeans}`
                     )
                   }
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#2F6FED]/10 text-[#2F6FED] hover:bg-[#2F6FED]/20 text-xs sm:text-sm font-bold transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 text-teal-800 text-xs font-bold hover:bg-teal-100 cursor-pointer"
                 >
-                  <Volume2 className="w-4 h-4" />
-                  <span>Read Aloud</span>
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>{lang === 'hi' ? 'सुनें' : 'Listen'}</span>
                 </button>
               </div>
 
-              {/* Scam Shield Warning Banner (Distinct & Calm) */}
+              {/* Scam Alert or Verified Clean */}
               {explanationResult.scamAnalysis.isSuspicious ? (
-                <div className="p-5 rounded-3xl bg-amber-50 border-2 border-amber-300 text-[#12304A] space-y-3">
-                  <div className="flex items-center gap-2.5 text-amber-900">
-                    <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0" />
-                    <h4 className="text-lg font-bold">
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-stone-900 space-y-2">
+                  <div className="flex items-center gap-2 text-amber-900">
+                    <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0" />
+                    <h4 className="text-sm sm:text-base font-bold">
                       {explanationResult.scamAnalysis.headline}
                     </h4>
                   </div>
-
-                  <p className="text-sm font-medium text-amber-900">
+                  <p className="text-xs sm:text-sm text-amber-950 leading-relaxed">
                     {explanationResult.scamAnalysis.reasoning}
                   </p>
-
-                  {/* Checkable Risk Indicators */}
-                  {explanationResult.scamAnalysis.warningSigns.length > 0 && (
-                    <div className="bg-white/80 p-3.5 rounded-2xl border border-amber-200 space-y-1.5">
-                      <p className="text-xs font-bold text-amber-900 uppercase tracking-wider">
-                        Specific Warning Signs Detected:
-                      </p>
-                      {explanationResult.scamAnalysis.warningSigns.map((sign, idx) => (
-                        <div key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-red-900">
-                          <X className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                          <span>{sign}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Recommended Action */}
-                  <div className="p-3 bg-white rounded-xl border border-amber-200 text-xs sm:text-sm font-semibold text-amber-950">
-                    <span className="font-bold text-amber-900">Recommended Action: </span>
-                    {explanationResult.scamAnalysis.recommendedAction}
-                  </div>
-
-                  {/* Actions: Don't act yet / Ask someone I trust */}
                   <div className="pt-2 flex flex-wrap gap-2">
                     <button
                       onClick={() => handleShareWithContact()}
-                      className="px-4 py-2 rounded-xl bg-white border border-amber-300 text-xs sm:text-sm font-bold text-amber-900 hover:bg-amber-100 flex items-center gap-2 shadow-2xs"
+                      className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-xs font-bold text-amber-900 hover:bg-amber-100 flex items-center gap-1.5 cursor-pointer"
                     >
-                      <Share2 className="w-4 h-4" />
-                      <span>Ask {contacts[0]?.name.split(' ')[0]} to Check This</span>
-                    </button>
-                    <button
-                      onClick={() =>
-                        speak(
-                          `Safe advice: Do not click any links in this message. Real banks will never deactivate your card via an SMS link.`
-                        )
-                      }
-                      className="px-4 py-2 rounded-xl bg-amber-600 text-white text-xs sm:text-sm font-bold hover:bg-amber-700"
-                    >
-                      Hear Safety Advice
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>{lang === 'hi' ? 'परिवार से सलाह लें' : 'Ask Trusted Contact'}</span>
                     </button>
                   </div>
                 </div>
               ) : (
-                /* Verified Safe State */
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0" />
-                    <div>
-                      <p className="text-sm font-bold">No scam indicators detected.</p>
-                      <p className="text-xs text-emerald-800">
-                        This looks like standard informational communication.
-                      </p>
-                    </div>
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-center gap-2.5">
+                  <ShieldCheck className="w-5 h-5 text-emerald-700 shrink-0" />
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold">{lang === 'hi' ? 'यह संदेश सुरक्षित लग रहा है' : 'No scam detected'}</p>
+                    <p className="text-xs text-emerald-800">{lang === 'hi' ? 'कोई धोखाधड़ी के संकेत नहीं मिले।' : 'This looks like normal informational communication.'}</p>
                   </div>
                 </div>
               )}
 
-              {/* The 3 Plain-Language Sections */}
-              <div className="space-y-4">
-                {/* 1. What it says */}
-                <div className="p-4 rounded-2xl bg-[#F7F9FC] border border-[#DDE4EA] space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#5D6B78]">
-                      1. In simple words: What it says
-                    </span>
-                    <button
-                      onClick={() => speak(explanationResult.whatItSays)}
-                      className="text-[#2F6FED] hover:underline text-xs flex items-center gap-1 font-semibold"
-                    >
-                      <Volume2 className="w-3.5 h-3.5" /> Listen
-                    </button>
-                  </div>
-                  <p className="text-base text-[#12304A] font-normal leading-relaxed">
-                    {explanationResult.whatItSays}
+              {/* 3 Plain-Language Explanations */}
+              <div className="space-y-3 text-xs sm:text-sm">
+                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 space-y-1">
+                  <p className="text-[11px] font-bold text-stone-500 uppercase">
+                    {lang === 'hi' ? '1. सरल शब्दों में: यह क्या कहता है' : '1. In simple words: What it says'}
                   </p>
+                  <p className="text-stone-800 leading-relaxed">{explanationResult.whatItSays}</p>
                 </div>
 
-                {/* 2. What it means */}
-                <div className="p-4 rounded-2xl bg-[#F7F9FC] border border-[#DDE4EA] space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#5D6B78]">
-                      2. What this really means for you
-                    </span>
-                    <button
-                      onClick={() => speak(explanationResult.whatItMeans)}
-                      className="text-[#2F6FED] hover:underline text-xs flex items-center gap-1 font-semibold"
-                    >
-                      <Volume2 className="w-3.5 h-3.5" /> Listen
-                    </button>
-                  </div>
-                  <p className="text-base text-[#12304A] font-normal leading-relaxed">
-                    {explanationResult.whatItMeans}
+                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 space-y-1">
+                  <p className="text-[11px] font-bold text-stone-500 uppercase">
+                    {lang === 'hi' ? '2. आपके लिए इसका क्या मतलब है' : '2. What this means for you'}
                   </p>
+                  <p className="text-stone-800 leading-relaxed">{explanationResult.whatItMeans}</p>
                 </div>
 
-                {/* 3. What you can do next */}
-                <div className="p-4 rounded-2xl bg-[#F7F9FC] border border-[#DDE4EA] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#5D6B78]">
-                      3. Safe next steps:
-                    </span>
-                    <button
-                      onClick={() =>
-                        speak(explanationResult.whatYouCanDo.join('. '))
-                      }
-                      className="text-[#2F6FED] hover:underline text-xs flex items-center gap-1 font-semibold"
-                    >
-                      <Volume2 className="w-3.5 h-3.5" /> Listen
-                    </button>
-                  </div>
-                  <ul className="space-y-1.5">
+                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 space-y-1.5">
+                  <p className="text-[11px] font-bold text-stone-500 uppercase">
+                    {lang === 'hi' ? '3. सुरक्षित अगले कदम' : '3. Safe next steps'}
+                  </p>
+                  <ul className="space-y-1">
                     {explanationResult.whatYouCanDo.map((step, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-[#12304A]">
-                        <span className="w-5 h-5 rounded-full bg-[#2F6FED]/10 text-[#2F6FED] flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
-                          {idx + 1}
-                        </span>
-                        <span className="font-medium">{step}</span>
+                      <li key={idx} className="flex items-start gap-2 text-stone-800">
+                        <span className="font-bold text-teal-800">{idx + 1}.</span>
+                        <span>{step}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
               </div>
 
-              {/* Connected Action: Turn into Guided Task or Share */}
-              <div className="pt-2 border-t border-[#DDE4EA] flex flex-wrap items-center justify-between gap-3">
-                <button
-                  onClick={() => handleShareWithContact()}
-                  className="px-4 py-2.5 rounded-xl border border-[#DDE4EA] bg-white text-xs sm:text-sm font-bold text-[#12304A] hover:bg-slate-50 flex items-center gap-2"
-                >
-                  <Share2 className="w-4 h-4 text-[#2F6FED]" />
-                  <span>Share Summary with Trusted Contact</span>
-                </button>
-
+              {/* Connected Action */}
+              <div className="pt-2 border-t border-stone-100 flex items-center justify-end">
                 <button
                   onClick={handleStartGuidedTask}
-                  className="px-5 py-2.5 rounded-xl bg-[#278A57] hover:bg-[#207046] text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-xs"
+                  className="px-4 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Start Guided Safe Action</span>
+                  <span>{lang === 'hi' ? 'गाइड शुरू करें' : 'Start Guided Task'}</span>
                 </button>
               </div>
             </div>
           ) : (
-            /* Empty State */
-            <div className="bg-white rounded-3xl p-8 sm:p-12 border border-[#DDE4EA] text-center flex flex-col items-center justify-center space-y-4 shadow-xs min-h-[420px]">
-              <div className="w-20 h-20 rounded-full bg-[#F7F9FC] border border-[#DDE4EA] flex items-center justify-center text-[#5D6B78]">
-                <ShieldCheck className="w-10 h-10 text-[#2F6FED]" />
+            <div className="bg-white rounded-2xl p-8 border border-stone-200 text-center flex flex-col items-center justify-center space-y-3 min-h-[340px] shadow-2xs">
+              <div className="w-14 h-14 rounded-2xl bg-stone-100 flex items-center justify-center text-stone-500">
+                <ShieldCheck className="w-7 h-7 text-teal-700" />
               </div>
-              <h3 className="text-xl font-bold text-[#12304A]">
-                No Message or Document Selected Yet
+              <h3 className="text-base font-bold text-stone-900">
+                {lang === 'hi' ? 'संदेश या फोटो चुनें' : 'No Message Selected Yet'}
               </h3>
-              <p className="text-sm sm:text-base text-[#5D6B78] max-w-md leading-relaxed">
-                Choose one of the quick test scenarios on the left (like the Suspicious Bank SMS or Electricity Bill), or paste your own message to inspect it.
+              <p className="text-xs sm:text-sm text-stone-500 max-w-sm leading-relaxed">
+                {lang === 'hi'
+                  ? 'बाएं पैनल से कोई भी उदाहरण चुनें या अपना SMS/बिल पेस्ट करके जांचें।'
+                  : 'Select an example on the left or paste your SMS to inspect for security.'}
               </p>
-              <button
-                onClick={() => handleSelectScenario(SAMPLE_SCENARIOS[0])}
-                className="px-5 py-2.5 rounded-xl bg-[#F7F9FC] hover:bg-[#2F6FED]/10 border border-[#DDE4EA] hover:border-[#2F6FED] text-sm font-bold text-[#2F6FED] transition-all"
-              >
-                Try "Urgent Bank Block Alert" Test Scenario
-              </button>
             </div>
           )}
         </div>

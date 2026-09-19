@@ -2,11 +2,9 @@ import React from 'react';
 import {
   Mic,
   VolumeX,
-  Eye,
   ShieldCheck,
   AlertTriangle,
   Languages,
-  Sparkles,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { TRANSLATIONS } from '../data/translations';
@@ -27,7 +25,7 @@ export const Header: React.FC = () => {
   const t = TRANSLATIONS[lang];
 
   const formattedDate = new Intl.DateTimeFormat(lang === 'hi' ? 'hi-IN' : 'en-IN', {
-    weekday: 'long',
+    weekday: 'short',
     month: 'short',
     day: 'numeric',
   }).format(new Date());
@@ -59,58 +57,55 @@ export const Header: React.FC = () => {
   return (
     <header
       id="saathi-header"
-      className="bg-white/95 backdrop-blur-md border-b border-[#E7E2D8] sticky top-0 z-30 px-3 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3 select-none shadow-xs"
+      className="bg-white/90 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-30 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4 select-none shadow-xs"
     >
-      {/* Greeting & Date with Elder Honorific */}
+      {/* Greeting & Date */}
       <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#0C1D2E] to-[#1E3A5F] text-[#F3E5AB] flex items-center justify-center font-black text-xl shadow-md border border-[#F3E5AB]/20">
+        <div className="w-10 h-10 rounded-xl bg-[#0F172A] text-amber-200 flex items-center justify-center font-bold text-lg shadow-sm">
           {preferences.userName.charAt(0)}
         </div>
         <div>
-          <h2 className="text-lg sm:text-2xl font-bold text-[#0C1D2E] leading-tight flex items-center gap-2">
-            <span>
-              {getGreeting()}, {preferences.userName}
-              {lang === 'hi' ? ' जी' : ''}
-            </span>
-            <span className="hidden sm:inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <h2 className="text-base sm:text-lg font-bold text-[#0F172A] leading-tight">
+            {getGreeting()}, {preferences.userName}
+            {lang === 'hi' ? ' जी' : ''}
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium flex items-center gap-2">
+          <p className="text-xs text-stone-500 font-medium flex items-center gap-2 mt-0.5">
             <span>{formattedDate}</span>
-            <span className="inline-block w-1 h-1 rounded-full bg-slate-300" />
+            <span className="inline-block w-1 h-1 rounded-full bg-stone-300" />
             <span className="text-emerald-700 flex items-center gap-1 font-semibold">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              {t.safeModeActive}
+              {lang === 'hi' ? 'सुरक्षित मोड' : 'Safe Mode'}
             </span>
           </p>
         </div>
       </div>
 
-      {/* Accessibility, Language Switcher, Emergency SOS & Voice */}
-      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-        {/* Language Switcher Pill */}
+      {/* Controls: Language, Text Size, Voice & SOS */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Language Switcher */}
         <button
           id="btn-language-switcher"
           onClick={handleLanguageToggle}
-          className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-amber-50 hover:bg-amber-100/80 text-amber-950 border border-amber-300 text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-95"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer border border-stone-200"
           title={lang === 'hi' ? 'Switch to English' : 'हिन्दी में बदलें'}
           aria-label="Toggle language"
         >
-          <Languages className="w-4 h-4 text-amber-700" />
-          <span>{lang === 'hi' ? '🇮🇳 हिन्दी (बदलें)' : '🇬🇧 English (Change)'}</span>
+          <Languages className="w-4 h-4 text-stone-600" />
+          <span>{lang === 'hi' ? '🇮🇳 हिन्दी' : '🇬🇧 English'}</span>
         </button>
 
-        {/* Text Scaling Controls */}
+        {/* Text Size Switcher */}
         <div
-          className="hidden md:flex items-center bg-[#F7F5F0] border border-[#E7E2D8] rounded-xl p-0.5 gap-0.5"
+          className="hidden sm:flex items-center bg-stone-100 border border-stone-200 rounded-xl p-0.5"
           title="Adjust Text Size"
         >
           <button
             id="text-size-normal"
             onClick={() => updatePreferences({ textSize: 'normal' })}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               preferences.textSize === 'normal'
-                ? 'bg-white text-[#0C1D2E] shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white text-stone-900 shadow-xs'
+                : 'text-stone-500 hover:text-stone-800'
             }`}
             aria-label="Normal Text Size"
           >
@@ -119,10 +114,10 @@ export const Header: React.FC = () => {
           <button
             id="text-size-large"
             onClick={() => updatePreferences({ textSize: 'large' })}
-            className={`px-2.5 py-1 rounded-lg text-sm font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-sm font-bold transition-all cursor-pointer ${
               preferences.textSize === 'large'
-                ? 'bg-white text-[#0C1D2E] shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white text-stone-900 shadow-xs'
+                : 'text-stone-500 hover:text-stone-800'
             }`}
             aria-label="Large Text Size"
           >
@@ -131,10 +126,10 @@ export const Header: React.FC = () => {
           <button
             id="text-size-xlarge"
             onClick={() => updatePreferences({ textSize: 'extra-large' })}
-            className={`px-2.5 py-1 rounded-lg text-base font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-base font-bold transition-all cursor-pointer ${
               preferences.textSize === 'extra-large'
-                ? 'bg-white text-[#0C1D2E] shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white text-stone-900 shadow-xs'
+                : 'text-stone-500 hover:text-stone-800'
             }`}
             aria-label="Extra Large Text Size"
           >
@@ -146,7 +141,7 @@ export const Header: React.FC = () => {
         {isSpeaking && (
           <button
             onClick={stopSpeaking}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm font-bold animate-pulse"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm font-bold animate-pulse cursor-pointer"
             title="Stop Speaking"
           >
             <VolumeX className="w-4 h-4" />
@@ -154,27 +149,27 @@ export const Header: React.FC = () => {
           </button>
         )}
 
-        {/* Emergency SOS Header Button */}
-        <button
-          id="btn-header-sos"
-          onClick={() => setEmergencyModalOpen(true)}
-          className="flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-xs sm:text-sm font-black shadow-md border border-red-800 transition-all transform active:scale-95"
-          aria-label="Emergency SOS"
-        >
-          <AlertTriangle className="w-4 h-4 text-amber-300 animate-bounce" />
-          <span className="tracking-wide">{t.emergencySosButton}</span>
-        </button>
-
         {/* Voice Assistant CTA */}
         <button
           id="btn-voice-saathi-header"
           onClick={() => setVoiceModalOpen(true)}
-          className="flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2 rounded-xl bg-[#0F766E] hover:bg-[#0D655E] text-white text-xs sm:text-sm font-bold shadow-md transition-all transform active:scale-95"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs sm:text-sm font-bold shadow-xs transition-transform active:scale-95 cursor-pointer"
           aria-label="Talk to Saathi using Voice"
         >
-          <Mic className="w-4 h-4 text-emerald-200" />
-          <span className="hidden sm:inline">{t.talkToSaathi}</span>
+          <Mic className="w-4 h-4 text-teal-200" />
+          <span className="hidden sm:inline">{lang === 'hi' ? 'बोलकर पूछें' : 'Voice Assistant'}</span>
           <span className="sm:hidden">{lang === 'hi' ? 'बोलें' : 'Voice'}</span>
+        </button>
+
+        {/* Emergency SOS Header Button */}
+        <button
+          id="btn-header-sos"
+          onClick={() => setEmergencyModalOpen(true)}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-transform active:scale-95 cursor-pointer"
+          aria-label="Emergency SOS"
+        >
+          <AlertTriangle className="w-4 h-4 text-amber-200" />
+          <span>{lang === 'hi' ? 'SOS' : 'SOS'}</span>
         </button>
       </div>
     </header>
