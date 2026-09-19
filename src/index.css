@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+}
+
+/* Accessible focus ring for seniors */
+*:focus-visible {
+  outline: 3px solid #2F6FED;
+  outline-offset: 3px;
+}
+
+/* Prevent unwanted layout shifts and ensure touch comfort */
+button, a, input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

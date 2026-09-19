@@ -1,0 +1,6 @@
+{
+  "name": "Saathi AI",
+  "description": "A trusted, voice-first digital companion for senior citizens to understand messages, complete digital tasks safely, detect scams, and manage daily reminders.",
+  "requestFramePermissions": ["microphone", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
